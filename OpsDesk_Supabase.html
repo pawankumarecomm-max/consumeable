@@ -1,0 +1,1116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OpsDesk — Maintenance & Consumables Manager</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg: #f4f2ee; --card: #ffffff; --border: #e2ddd6; --border2: #ccc8c0;
+  --text: #1a1917; --muted: #6b6860; --accent: #c85a2a; --accent-bg: #fdf0ea;
+  --accent2: #2a6ec8; --accent2-bg: #eaf0fd; --green: #2a9c5a; --green-bg: #eafaf2;
+  --amber: #c87c2a; --amber-bg: #fdf5ea; --red: #c82a2a; --red-bg: #fdeaea;
+  --purple: #7c2ac8; --purple-bg: #f5eafd;
+  --font: 'DM Sans', sans-serif; --mono: 'DM Mono', monospace;
+  --radius: 10px; --radius-lg: 14px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; font-size: 14px; }
+.shell { display: flex; min-height: 100vh; }
+.sidebar { width: 220px; background: var(--text); color: #fff; padding: 24px 16px; flex-shrink: 0; display: flex; flex-direction: column; gap: 4px; position: fixed; top: 0; left: 0; height: 100vh; overflow-y: auto; z-index: 100; }
+.sidebar-logo { font-size: 18px; font-weight: 600; padding: 0 8px 20px; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 12px; letter-spacing: -0.5px; }
+.sidebar-logo span { color: var(--accent); }
+.nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 8px; cursor: pointer; font-size: 13px; color: rgba(255,255,255,0.7); transition: all 0.15s; font-weight: 500; border: none; background: none; width: 100%; text-align: left; }
+.nav-item:hover { background: rgba(255,255,255,0.08); color: #fff; }
+.nav-item.active { background: var(--accent); color: #fff; }
+.nav-icon { font-size: 15px; width: 18px; text-align: center; flex-shrink: 0; }
+.nav-badge { margin-left: auto; background: var(--red); color: #fff; font-size: 10px; border-radius: 10px; padding: 1px 6px; font-weight: 600; }
+.main { margin-left: 220px; padding: 28px; flex: 1; max-width: calc(100% - 220px); }
+.page { display: none; }
+.page.active { display: block; }
+.page-title { font-size: 22px; font-weight: 600; margin-bottom: 6px; letter-spacing: -0.5px; }
+.page-sub { color: var(--muted); font-size: 13px; margin-bottom: 24px; }
+.card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px; }
+.card-grid { display: grid; gap: 16px; }
+.card-grid-2 { grid-template-columns: 1fr 1fr; }
+.card-grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+.card-grid-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+.stat-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+.stat-label { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+.stat-value { font-size: 26px; font-weight: 600; letter-spacing: -1px; }
+.stat-sub { font-size: 11px; color: var(--muted); margin-top: 4px; }
+.section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.section-title { font-size: 15px; font-weight: 600; }
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; border: 1px solid var(--border2); background: var(--card); color: var(--text); font-family: var(--font); transition: all 0.15s; text-decoration: none; }
+.btn:hover { background: var(--bg); }
+.btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.btn-primary:hover { background: #b34d22; }
+.btn-sm { padding: 5px 10px; font-size: 12px; }
+.btn-danger { background: var(--red); color: #fff; border-color: var(--red); }
+.btn-green { background: var(--green); color: #fff; border-color: var(--green); }
+.badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+.badge-green { background: var(--green-bg); color: var(--green); }
+.badge-amber { background: var(--amber-bg); color: var(--amber); }
+.badge-red { background: var(--red-bg); color: var(--red); }
+.badge-blue { background: var(--accent2-bg); color: var(--accent2); }
+.badge-purple { background: var(--purple-bg); color: var(--purple); }
+.badge-gray { background: var(--bg); color: var(--muted); border: 1px solid var(--border); }
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { text-align: left; padding: 10px 12px; color: var(--muted); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border); }
+td { padding: 11px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: var(--bg); }
+.progress-bar { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+.progress-fill { height: 100%; border-radius: 3px; transition: width 0.4s; }
+.form-row { display: grid; gap: 12px; margin-bottom: 12px; }
+.form-row-2 { grid-template-columns: 1fr 1fr; }
+.form-row-3 { grid-template-columns: 1fr 1fr 1fr; }
+.form-group { display: flex; flex-direction: column; gap: 5px; }
+label { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.4px; }
+input, select, textarea { font-family: var(--font); font-size: 13px; padding: 9px 12px; border: 1px solid var(--border2); border-radius: 8px; background: var(--card); color: var(--text); outline: none; transition: border 0.15s; }
+input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+textarea { resize: vertical; min-height: 80px; }
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 200; display: none; align-items: center; justify-content: center; padding: 20px; }
+.modal-overlay.open { display: flex; }
+.modal { background: var(--card); border-radius: var(--radius-lg); padding: 24px; width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto; }
+.modal-title { font-size: 17px; font-weight: 600; margin-bottom: 20px; }
+.modal-footer { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); }
+.photo-area { border: 2px dashed var(--border2); border-radius: 10px; padding: 20px; text-align: center; cursor: pointer; position: relative; transition: border 0.15s; }
+.photo-area:hover { border-color: var(--accent); }
+.photo-preview { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
+.photo-thumb { height: 80px; border-radius: 8px; object-fit: cover; width: 100%; }
+.alert { padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+.alert-amber { background: var(--amber-bg); color: var(--amber); border: 1px solid #f0c878; }
+.alert-red { background: var(--red-bg); color: var(--red); border: 1px solid #f0a0a0; }
+.alert-green { background: var(--green-bg); color: var(--green); border: 1px solid #80d4a8; }
+.log-entry { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+.log-entry:last-child { border-bottom: none; }
+.log-date { color: var(--muted); font-size: 11px; width: 90px; flex-shrink: 0; font-family: var(--mono); }
+.machine-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 18px; position: relative; }
+.machine-status { position: absolute; top: 16px; right: 16px; }
+.machine-name { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+.machine-id { font-size: 11px; color: var(--muted); font-family: var(--mono); }
+.machine-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+.meta-item { font-size: 12px; }
+.meta-label { color: var(--muted); margin-bottom: 2px; }
+.meta-val { font-weight: 600; font-size: 13px; }
+.machine-actions { display: flex; gap: 6px; margin-top: 14px; flex-wrap: wrap; }
+.req-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 16px; margin-bottom: 12px; }
+.req-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 10px; }
+.req-title { font-weight: 600; font-size: 14px; }
+.req-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.req-body { font-size: 13px; color: var(--muted); margin-bottom: 10px; line-height: 1.5; }
+.req-photos { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+.req-photo { width: 70px; height: 60px; object-fit: cover; border-radius: 6px; cursor: pointer; }
+.req-footer { display: flex; gap: 6px; align-items: center; }
+.forecast-row-critical td { background: #fff5f5; }
+.forecast-row-warn td { background: #fffbf0; }
+.toast { position: fixed; bottom: 24px; right: 24px; background: var(--text); color: #fff; padding: 12px 18px; border-radius: 10px; font-size: 13px; z-index: 999; opacity: 0; transform: translateY(10px); transition: all 0.3s; pointer-events: none; }
+.toast.show { opacity: 1; transform: none; }
+.tabs { display: flex; gap: 2px; background: var(--bg); border-radius: 8px; padding: 3px; margin-bottom: 20px; width: fit-content; }
+.tab { padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; color: var(--muted); border: none; background: none; font-family: var(--font); transition: all 0.15s; }
+.tab.active { background: var(--card); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.quick-strip { display: flex; gap: 8px; align-items: center; background: var(--accent-bg); border: 1px solid #f0c4a8; border-radius: 10px; padding: 12px 16px; margin-bottom: 20px; }
+.quick-strip select, .quick-strip input[type=number] { padding: 6px 10px; font-size: 13px; flex: 1; max-width: 180px; }
+.db-status { display: flex; align-items: center; gap: 6px; font-size: 11px; padding: 4px 10px; border-radius: 20px; margin-top: auto; }
+.db-status.connected { background: var(--green-bg); color: var(--green); }
+.db-status.error { background: var(--red-bg); color: var(--red); }
+.db-status.loading { background: var(--amber-bg); color: var(--amber); }
+@media(max-width:900px){
+  .sidebar { width: 60px; }
+  .nav-item span:not(.nav-icon) { display: none; }
+  .sidebar-logo { font-size: 0; padding-bottom: 16px; }
+  .main { margin-left: 60px; max-width: calc(100% - 60px); padding: 20px 16px; }
+  .card-grid-4 { grid-template-columns: 1fr 1fr; }
+  .card-grid-3 { grid-template-columns: 1fr 1fr; }
+  .form-row-3 { grid-template-columns: 1fr 1fr; }
+}
+@media(max-width:600px){
+  .card-grid-2,.card-grid-3,.card-grid-4 { grid-template-columns: 1fr; }
+  .form-row-2,.form-row-3 { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="shell">
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="sidebar-logo">Ops<span>Desk</span></div>
+  <button class="nav-item active" onclick="showPage('dashboard')"><span class="nav-icon">📊</span><span>Dashboard</span></button>
+  <button class="nav-item" onclick="showPage('consumables')"><span class="nav-icon">📦</span><span>Consumables</span></button>
+  <button class="nav-item" onclick="showPage('forecast')"><span class="nav-icon">📈</span><span>15-Day Forecast</span></button>
+  <button class="nav-item" onclick="showPage('requisitions')"><span class="nav-icon">📋</span><span>Requisitions</span><span class="nav-badge" id="req-badge" style="display:none">0</span></button>
+  <button class="nav-item" onclick="showPage('analytics')"><span class="nav-icon">📉</span><span>Analytics</span></button>
+  <button class="nav-item" onclick="showPage('machines')"><span class="nav-icon">⚙️</span><span>Machines</span></button>
+  <button class="nav-item" onclick="showPage('settings')"><span class="nav-icon">🔧</span><span>Settings</span></button>
+  <div class="db-status loading" id="db-status" style="margin-top:auto;margin-bottom:4px">⏳ <span id="db-status-text">Connecting…</span></div>
+</nav>
+
+<main class="main">
+
+<!-- DASHBOARD -->
+<div class="page active" id="page-dashboard">
+  <div class="page-title">Good morning, Manager 👋</div>
+  <div class="page-sub" id="dashboard-date"></div>
+  <div class="card-grid card-grid-4" style="margin-bottom:20px;">
+    <div class="stat-card"><div class="stat-label">Total Items</div><div class="stat-value" id="d-total">—</div><div class="stat-sub">Consumables tracked</div></div>
+    <div class="stat-card"><div class="stat-label">Low Stock</div><div class="stat-value" id="d-low" style="color:var(--amber)">—</div><div class="stat-sub">Need reorder soon</div></div>
+    <div class="stat-card"><div class="stat-label">Critical</div><div class="stat-value" id="d-critical" style="color:var(--red)">—</div><div class="stat-sub">Order immediately</div></div>
+    <div class="stat-card"><div class="stat-label">Open Requests</div><div class="stat-value" id="d-reqs" style="color:var(--purple)">—</div><div class="stat-sub">Open requisitions</div></div>
+  </div>
+  <div class="card-grid card-grid-2">
+    <div class="card">
+      <div class="section-header"><div class="section-title">⚠️ Urgent Stock Alerts</div><button class="btn btn-sm" onclick="showPage('forecast')">View Forecast →</button></div>
+      <div id="dash-alerts"><div style="color:var(--muted);font-size:13px">Loading…</div></div>
+    </div>
+    <div class="card">
+      <div class="section-header"><div class="section-title">📋 Recent Requisitions</div><button class="btn btn-sm" onclick="showPage('requisitions')">View All →</button></div>
+      <div id="dash-reqs"><div style="color:var(--muted);font-size:13px">No requests yet.</div></div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:16px;">
+    <div class="section-header"><div class="section-title">🔧 Machine Maintenance Due</div><button class="btn btn-sm" onclick="showPage('machines')">All Machines →</button></div>
+    <div id="dash-machines"><div style="color:var(--muted);font-size:13px">Loading…</div></div>
+  </div>
+</div>
+
+<!-- CONSUMABLES -->
+<div class="page" id="page-consumables">
+  <div class="page-title">Consumables</div>
+  <div class="page-sub">Track daily usage and current stock levels</div>
+  <div class="quick-strip" style="flex-wrap:wrap;row-gap:10px;align-items:flex-start">
+    <span style="font-weight:600;font-size:13px;color:var(--accent);white-space:nowrap;padding-top:7px">⚡ Quick Consumption</span>
+    <div style="position:relative;flex:1;min-width:180px">
+      <input type="text" id="qc-search" placeholder="Type item name to search…" autocomplete="off" oninput="qcSearch(this.value)" onkeydown="qcKey(event)" style="width:100%;padding:7px 10px;font-size:13px">
+      <div id="qc-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--card);border:1px solid var(--border2);border-radius:8px;z-index:50;box-shadow:0 4px 16px rgba(0,0,0,0.12);max-height:220px;overflow-y:auto;margin-top:2px"></div>
+      <input type="hidden" id="qc-item">
+    </div>
+    <div style="display:flex;flex-direction:column;gap:2px;min-width:120px">
+      <input type="number" id="qc-qty" placeholder="Qty used" min="0.01" step="0.01" style="padding:7px 10px;font-size:13px" oninput="qcValidateQty()">
+      <span id="qc-qty-err" style="font-size:11px;color:var(--red);display:none"></span>
+    </div>
+    <input type="text" id="qc-note" placeholder="Note (optional)" style="flex:1;min-width:120px;padding:7px 10px;font-size:13px">
+    <button class="btn btn-primary" onclick="quickConsume()">Log Usage</button>
+  </div>
+  <div id="qc-item-info" style="display:none;margin:-12px 0 16px;padding:8px 16px;background:var(--accent2-bg);border-radius:0 0 10px 10px;font-size:12px;color:var(--accent2);border:1px solid var(--border);border-top:none"></div>
+  <div class="section-header">
+    <div class="section-title">All Items</div>
+    <button class="btn btn-primary" onclick="openAddItem()">+ Add Item</button>
+  </div>
+  <div class="card">
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Item Name</th><th>Category</th><th>Unit</th><th>Current Stock</th><th>Stock Level</th><th>Avg Daily Use</th><th>Days Left</th><th>Actions</th></tr></thead>
+        <tbody id="items-table"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- FORECAST -->
+<div class="page" id="page-forecast">
+  <div class="page-title">15-Day Forecast</div>
+  <div class="page-sub">Predicted stock levels and recommended order quantities</div>
+  <div id="forecast-alerts" style="margin-bottom:16px;"></div>
+  <div class="card">
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Item</th><th>Current Stock</th><th>Daily Avg Use</th><th>15-Day Need</th><th>Will Run Out In</th><th>Order Qty Needed</th><th>Status</th></tr></thead>
+        <tbody id="forecast-table"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- REQUISITIONS -->
+<div class="page" id="page-requisitions">
+  <div class="page-title">Requisitions</div>
+  <div class="page-sub">Operator material requests — submit, track and manage</div>
+  <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:20px;">
+    <div class="tabs" style="margin-bottom:0">
+      <button class="tab active" onclick="filterReqs('all',this)">All</button>
+      <button class="tab" onclick="filterReqs('open',this)">Open</button>
+      <button class="tab" onclick="filterReqs('closed',this)">Closed</button>
+      <button class="tab" onclick="filterReqs('declined',this)">Declined</button>
+    </div>
+    <button class="btn btn-primary" style="margin-left:auto" onclick="openReqForm()">+ New Requisition</button>
+  </div>
+  <div class="card" id="req-form-panel" style="display:none;margin-bottom:20px;border:2px solid var(--accent)">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+      <div style="font-size:16px;font-weight:600">📋 New Requisition Form</div>
+      <button class="btn btn-sm" onclick="closeReqForm()">✕ Close</button>
+    </div>
+    <div class="alert alert-amber" style="margin-bottom:16px">📱 Fill this form clearly. Attach photo if available. Manager will review and respond.</div>
+    <div class="form-row form-row-3">
+      <div class="form-group"><label>Operator Name *</label><input type="text" id="rq-name" placeholder="Your full name"></div>
+      <div class="form-group"><label>Department / Section</label><input type="text" id="rq-dept" placeholder="e.g. Printing Section"></div>
+      <div class="form-group"><label>Machine / Asset</label><input type="text" id="rq-machine" placeholder="e.g. M/C-3"></div>
+    </div>
+    <div class="form-row form-row-2">
+      <div class="form-group"><label>Item Required *</label><input type="text" id="rq-item" placeholder="e.g. High Temp Grease 5 KG"></div>
+      <div class="form-group"><label>Quantity Needed</label><input type="text" id="rq-qty" placeholder="e.g. 5 KG"></div>
+    </div>
+    <div class="form-row form-row-2">
+      <div class="form-group"><label>Priority</label>
+        <select id="rq-priority">
+          <option value="normal">🟢 Normal — Plan in next order</option>
+          <option value="urgent">🟡 Urgent — Need within today</option>
+          <option value="critical">🔴 Critical — Production stopped</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Required By Date</label><input type="date" id="rq-reqdate"></div>
+    </div>
+    <div class="form-group" style="margin-bottom:16px"><label>Specifications / Reason</label>
+      <textarea id="rq-desc" placeholder="Describe specifications, grade/brand preference, why needed…"></textarea>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;padding-top:16px;border-top:1px solid var(--border)">
+      <button class="btn" onclick="closeReqForm()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveReq()">📤 Submit Request</button>
+    </div>
+  </div>
+  <div id="reqs-list"></div>
+</div>
+
+<!-- ANALYTICS -->
+<div class="page" id="page-analytics">
+  <div class="page-title">Stock Analytics</div>
+  <div class="page-sub">Date-wise consumption across all SKUs</div>
+  <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:16px;">
+    <div class="form-group" style="margin:0"><label>From Date</label><input type="date" id="an-from" onchange="renderAnalytics()"></div>
+    <div class="form-group" style="margin:0"><label>To Date</label><input type="date" id="an-to" onchange="renderAnalytics()"></div>
+    <div class="form-group" style="margin:0;min-width:160px"><label>Filter Category</label><select id="an-cat" onchange="renderAnalytics()"><option value="all">All Categories</option></select></div>
+    <button class="btn" onclick="setAnalyticsRange(7)">Last 7 Days</button>
+    <button class="btn" onclick="setAnalyticsRange(30)">Last 30 Days</button>
+    <button class="btn" onclick="setAnalyticsRange(90)">Last 90 Days</button>
+  </div>
+  <div class="card-grid card-grid-4" style="margin-bottom:16px;">
+    <div class="stat-card"><div class="stat-label">Items Tracked</div><div class="stat-value" id="an-o1">—</div></div>
+    <div class="stat-card"><div class="stat-label">Total Consumed</div><div class="stat-value" id="an-o2" style="font-size:18px">—</div></div>
+    <div class="stat-card"><div class="stat-label">Active Days</div><div class="stat-value" id="an-o3">—</div></div>
+    <div class="stat-card"><div class="stat-label">Items w/ No Logs</div><div class="stat-value" id="an-o4" style="color:var(--amber)">—</div></div>
+  </div>
+  <div class="card" style="margin-bottom:16px">
+    <div class="section-header"><div class="section-title">📊 Top Consumed Items</div></div>
+    <canvas id="an-bar-chart" height="120"></canvas>
+  </div>
+  <div class="card">
+    <div class="section-title" style="margin-bottom:14px">📋 All SKUs Summary</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>SKU / Item</th><th>Unit</th><th>Current Stock</th><th>Used in Period</th><th>Avg/Day</th><th>Days Left</th><th>Status</th></tr></thead>
+        <tbody id="an-summary-table"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- MACHINES -->
+<div class="page" id="page-machines">
+  <div class="page-title">Machines</div>
+  <div class="page-sub">Lubrication, greasing schedules and maintenance tracking</div>
+  <div style="display:flex;gap:8px;justify-content:flex-end;margin-bottom:16px;">
+    <button class="btn btn-primary" onclick="openMachineModal()">+ Add Machine</button>
+  </div>
+  <div class="card-grid card-grid-3" id="machines-grid"></div>
+</div>
+
+<!-- SETTINGS -->
+<div class="page" id="page-settings">
+  <div class="page-title">Settings</div>
+  <div class="page-sub">Company details and preferences</div>
+  <div class="card" style="max-width:500px">
+    <div class="form-group" style="margin-bottom:12px"><label>Company / Plant Name</label><input type="text" id="s-company" placeholder="e.g. Shree Industries"></div>
+    <div class="form-group" style="margin-bottom:12px"><label>Manager Name</label><input type="text" id="s-manager" placeholder="Your name"></div>
+    <div class="form-group" style="margin-bottom:20px"><label>Low Stock Warning (days)</label><input type="number" id="s-lowdays" value="5" min="1"></div>
+    <button class="btn btn-primary" onclick="saveSettings()">Save Settings</button>
+    <div style="margin-top:24px;padding-top:20px;border-top:1px solid var(--border);">
+      <div style="font-weight:600;margin-bottom:10px">🔗 Supabase Connection</div>
+      <div id="supabase-info" style="font-size:12px;color:var(--muted);font-family:var(--mono);background:var(--bg);padding:10px;border-radius:8px;border:1px solid var(--border)">Loading…</div>
+    </div>
+  </div>
+</div>
+
+</main>
+</div>
+
+<!-- MODALS -->
+<!-- ADD / EDIT ITEM MODAL -->
+<div class="modal-overlay" id="modal-item">
+  <div class="modal">
+    <div class="modal-title" id="modal-item-title">Add Consumable Item</div>
+    <div class="form-row form-row-2">
+      <div class="form-group"><label>Item Name *</label><input type="text" id="fi-name" placeholder="e.g. Cutting Oil"></div>
+      <div class="form-group"><label>Category *</label><select id="fi-cat"><option>Lubricants</option><option>Greases</option><option>Chemicals</option><option>Abrasives</option><option>Fasteners</option><option>Safety</option><option>Electrical</option><option>Hydraulic</option><option>Welding</option><option>Other</option></select></div>
+    </div>
+    <div class="form-row form-row-3">
+      <div class="form-group"><label>Unit</label><select id="fi-unit"><option>KG</option><option>Litre</option><option>Nos</option><option>Box</option><option>Roll</option><option>Set</option><option>Metre</option></select></div>
+      <div class="form-group"><label>Current Stock</label><input type="number" id="fi-stock" placeholder="0" min="0" step="0.1"></div>
+      <div class="form-group"><label>Min. Stock Level</label><input type="number" id="fi-minstock" placeholder="0" min="0" step="0.1"></div>
+    </div>
+    <div class="form-row form-row-2">
+      <div class="form-group"><label>Est. Daily Consumption</label><input type="number" id="fi-dailyuse" placeholder="0" min="0" step="0.01"></div>
+      <div class="form-group"><label>Supplier / Brand</label><input type="text" id="fi-supplier" placeholder="Optional"></div>
+    </div>
+    <div class="form-group"><label>Notes</label><textarea id="fi-notes" placeholder="Any notes…"></textarea></div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('modal-item')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveItem()">Save Item</button>
+    </div>
+  </div>
+</div>
+
+<!-- LOG CONSUMPTION MODAL -->
+<div class="modal-overlay" id="modal-log">
+  <div class="modal">
+    <div class="modal-title">Log Consumption</div>
+    <div class="form-group" style="margin-bottom:12px"><label>Item</label><select id="fl-item"></select></div>
+    <div class="form-row form-row-2">
+      <div class="form-group"><label>Quantity Used</label><input type="number" id="fl-qty" placeholder="0" min="0.01" step="0.01"></div>
+      <div class="form-group"><label>Date</label><input type="date" id="fl-date"></div>
+    </div>
+    <div class="form-group"><label>Note</label><input type="text" id="fl-note" placeholder="Optional note"></div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('modal-log')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveLog()">Log</button>
+    </div>
+  </div>
+</div>
+
+<!-- MACHINE MODAL -->
+<div class="modal-overlay" id="modal-machine">
+  <div class="modal">
+    <div class="modal-title" id="modal-machine-title">Add Machine</div>
+    <div class="form-row form-row-2">
+      <div class="form-group"><label>Machine Name *</label><input type="text" id="mc-name" placeholder="e.g. CNC Lathe"></div>
+      <div class="form-group"><label>Machine ID / Tag</label><input type="text" id="mc-id" placeholder="e.g. CNC-01"></div>
+    </div>
+    <div class="form-row form-row-2">
+      <div class="form-group"><label>Location</label><input type="text" id="mc-loc" placeholder="e.g. Shop Floor A"></div>
+      <div class="form-group"><label>Make / Model</label><input type="text" id="mc-model" placeholder="Optional"></div>
+    </div>
+    <div style="font-weight:600;font-size:13px;margin:16px 0 10px;padding-top:12px;border-top:1px solid var(--border)">🛢️ Oiling & Greasing Schedule</div>
+    <div class="form-row form-row-3">
+      <div class="form-group"><label>Oil Type Used</label><input type="text" id="mc-oiltype" placeholder="e.g. Servo 68"></div>
+      <div class="form-group"><label>Last Oiling Date</label><input type="date" id="mc-oildate"></div>
+      <div class="form-group"><label>Oiling Freq. (days)</label><input type="number" id="mc-oilfreq" placeholder="7" min="1"></div>
+    </div>
+    <div class="form-row form-row-3">
+      <div class="form-group"><label>Grease Type Used</label><input type="text" id="mc-greasetype" placeholder="e.g. Hi-Temp EP-2"></div>
+      <div class="form-group"><label>Last Greasing Date</label><input type="date" id="mc-greasedate"></div>
+      <div class="form-group"><label>Greasing Freq. (days)</label><input type="number" id="mc-greasefreq" placeholder="30" min="1"></div>
+    </div>
+    <div style="font-weight:600;font-size:13px;margin:16px 0 10px;padding-top:12px;border-top:1px solid var(--border)">🔧 Maintenance</div>
+    <div class="form-row form-row-2">
+      <div class="form-group"><label>Last Maintenance Date</label><input type="date" id="mc-maintdate"></div>
+      <div class="form-group"><label>Maintenance Freq. (days)</label><input type="number" id="mc-maintfreq" placeholder="90" min="1"></div>
+    </div>
+    <div class="form-group"><label>Notes / Remarks</label><textarea id="mc-notes" placeholder="Any special notes…"></textarea></div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('modal-machine')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveMachine()">Save Machine</button>
+    </div>
+  </div>
+</div>
+
+<!-- HISTORY MODAL -->
+<div class="modal-overlay" id="modal-history">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-title" id="modal-history-title">Consumption History</div>
+    <div id="history-list"></div>
+    <div class="modal-footer"><button class="btn" onclick="closeModal('modal-history')">Close</button></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// SUPABASE CONFIG
+// ============================================================
+const SUPABASE_URL = 'https://fhrichslhlrvcbwjihgr.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_OO8FqAAK-CEMDXuZKsWWkQ_7KcxVNOi';
+
+// ============================================================
+// SUPABASE CLIENT (vanilla fetch-based, no SDK needed)
+// ============================================================
+const sb = {
+  async query(table, opts = {}) {
+    let url = `${SUPABASE_URL}/rest/v1/${table}`;
+    const params = [];
+    if (opts.select) params.push(`select=${opts.select}`);
+    if (opts.filter) Object.entries(opts.filter).forEach(([k,v]) => params.push(`${k}=eq.${encodeURIComponent(v)}`));
+    if (opts.order) params.push(`order=${opts.order}`);
+    if (opts.limit) params.push(`limit=${opts.limit}`);
+    if (params.length) url += '?' + params.join('&');
+    const res = await fetch(url, { headers: sb._headers() });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+  },
+  async insert(table, data) {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
+      method: 'POST',
+      headers: { ...sb._headers(), 'Prefer': 'return=representation' },
+      body: JSON.stringify(data)
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+  },
+  async update(table, id, data) {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${id}`, {
+      method: 'PATCH',
+      headers: { ...sb._headers(), 'Prefer': 'return=representation' },
+      body: JSON.stringify({ ...data, updated_at: new Date().toISOString() })
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+  },
+  async delete(table, id) {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${id}`, {
+      method: 'DELETE', headers: sb._headers()
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return true;
+  },
+  async upsert(table, data, onConflict = 'id') {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?on_conflict=${onConflict}`, {
+      method: 'POST',
+      headers: { ...sb._headers(), 'Prefer': 'return=representation,resolution=merge-duplicates' },
+      body: JSON.stringify(data)
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+  },
+  _headers() {
+    return {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json'
+    };
+  }
+};
+
+// ============================================================
+// APP STATE
+// ============================================================
+let items = [], logs = [], reqs = [], machines = [], settings = {};
+let editItemId = null, editMachineId = null;
+let reqFilter = 'all';
+let anBarChart = null, anLineChart = null;
+let qcSelectedId = null, qcDropIdx = -1;
+
+// ============================================================
+// INIT
+// ============================================================
+async function init() {
+  document.getElementById('dashboard-date').textContent = new Date().toLocaleDateString('en-IN', {weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  setDbStatus('loading', '⏳ Connecting…');
+  try {
+    await loadAll();
+    setDbStatus('connected', '🟢 Supabase Connected');
+    document.getElementById('supabase-info').textContent = `URL: ${SUPABASE_URL}`;
+    renderAll();
+  } catch(e) {
+    setDbStatus('error', '🔴 DB Error');
+    document.getElementById('supabase-info').textContent = `Error: ${e.message}`;
+    toast('❌ Supabase error: ' + e.message, 4000);
+    console.error(e);
+  }
+}
+
+async function loadAll() {
+  const [_items, _logs, _reqs, _machines, _settings] = await Promise.all([
+    sb.query('items', { order: 'created_at.asc' }),
+    sb.query('consumption_logs', { order: 'logged_at.desc,created_at.desc' }),
+    sb.query('requisitions', { order: 'created_at.desc' }),
+    sb.query('machines', { order: 'created_at.asc' }),
+    sb.query('settings', { filter: { id: 'singleton' } }),
+  ]);
+  items = _items || [];
+  logs = _logs || [];
+  reqs = _reqs || [];
+  machines = _machines || [];
+  settings = (_settings && _settings[0]) || { id:'singleton', company:'', manager:'', low_days:5 };
+}
+
+function renderAll() {
+  renderDashboard();
+  renderItemsTable();
+  renderForecast();
+  renderReqs();
+  renderMachines();
+  renderAnalytics();
+  renderSettings();
+}
+
+function setDbStatus(state, text) {
+  const el = document.getElementById('db-status');
+  el.className = 'db-status ' + state;
+  document.getElementById('db-status-text').textContent = text.replace(/^[^ ]+ /, '');
+  el.innerHTML = text;
+}
+
+// ============================================================
+// NAVIGATION
+// ============================================================
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  const btns = document.querySelectorAll('.nav-item');
+  btns.forEach(b => { if(b.getAttribute('onclick') && b.getAttribute('onclick').includes("'"+name+"'")) b.classList.add('active'); });
+  if(name === 'analytics') renderAnalytics();
+}
+
+// ============================================================
+// DASHBOARD
+// ============================================================
+function renderDashboard() {
+  const lowDays = settings.low_days || 5;
+  let low = 0, critical = 0;
+  items.forEach(it => {
+    const days = it.daily_use > 0 ? it.stock / it.daily_use : 999;
+    if (days <= 3) critical++;
+    else if (days <= lowDays) low++;
+  });
+  const openReqs = reqs.filter(r => r.status === 'open').length;
+  document.getElementById('d-total').textContent = items.length;
+  document.getElementById('d-low').textContent = low;
+  document.getElementById('d-critical').textContent = critical;
+  document.getElementById('d-reqs').textContent = openReqs;
+  const badge = document.getElementById('req-badge');
+  badge.style.display = openReqs > 0 ? '' : 'none';
+  badge.textContent = openReqs;
+
+  // Alerts
+  const alerts = items.filter(it => it.daily_use > 0 && (it.stock / it.daily_use) <= (lowDays || 5))
+    .sort((a,b) => (a.stock/a.daily_use) - (b.stock/b.daily_use)).slice(0, 6);
+  const alertsDiv = document.getElementById('dash-alerts');
+  if(!alerts.length) { alertsDiv.innerHTML = '<div style="color:var(--muted);font-size:13px">All stock levels are healthy ✅</div>'; }
+  else alertsDiv.innerHTML = alerts.map(it => {
+    const days = (it.stock / it.daily_use).toFixed(1);
+    const cls = +days <= 3 ? 'badge-red' : 'badge-amber';
+    return `<div class="log-entry"><span class="badge ${cls}">${days}d</span><span style="flex:1">${it.name}</span><span style="color:var(--muted);font-size:12px">${it.stock} ${it.unit} left</span></div>`;
+  }).join('');
+
+  // Recent reqs
+  const recentReqs = reqs.slice(0, 4);
+  document.getElementById('dash-reqs').innerHTML = recentReqs.length ? recentReqs.map(r => {
+    const cls = r.priority === 'critical' ? 'badge-red' : r.priority === 'urgent' ? 'badge-amber' : 'badge-green';
+    const statusCls = r.status === 'open' ? 'badge-blue' : r.status === 'closed' ? 'badge-green' : 'badge-gray';
+    return `<div class="log-entry"><span class="badge ${cls}">${r.priority}</span><span style="flex:1">${r.item_name}</span><span class="badge ${statusCls}">${r.status}</span></div>`;
+  }).join('') : '<div style="color:var(--muted);font-size:13px">No requisitions yet.</div>';
+
+  // Machine maintenance
+  const today = new Date();
+  const due = machines.map(m => {
+    const checks = [
+      { label:'Oil', last: m.oil_last_date, freq: m.oil_freq_days },
+      { label:'Grease', last: m.grease_last_date, freq: m.grease_freq_days },
+      { label:'Maintenance', last: m.maint_last_date, freq: m.maint_freq_days },
+    ].filter(c => c.last && c.freq).map(c => {
+      const next = new Date(c.last); next.setDate(next.getDate() + c.freq);
+      const daysLeft = Math.ceil((next - today) / 86400000);
+      return { ...c, daysLeft, machine: m.name, machineId: m.machine_id };
+    }).filter(c => c.daysLeft <= 7);
+    return checks;
+  }).flat().sort((a,b) => a.daysLeft - b.daysLeft);
+
+  document.getElementById('dash-machines').innerHTML = due.length ? due.slice(0,5).map(d => {
+    const cls = d.daysLeft <= 0 ? 'badge-red' : d.daysLeft <= 3 ? 'badge-amber' : 'badge-blue';
+    const txt = d.daysLeft <= 0 ? 'Overdue' : `Due in ${d.daysLeft}d`;
+    return `<div class="log-entry"><span class="badge ${cls}">${txt}</span><span style="flex:1">${d.machine} ${d.machineId ? '('+d.machineId+')' : ''} — ${d.label}</span></div>`;
+  }).join('') : '<div style="color:var(--muted);font-size:13px">No maintenance due in the next 7 days ✅</div>';
+}
+
+// ============================================================
+// ITEMS
+// ============================================================
+function openAddItem() { editItemId = null; document.getElementById('modal-item-title').textContent = 'Add Consumable Item'; clearItemForm(); openModal('modal-item'); }
+function clearItemForm() { ['fi-name','fi-stock','fi-minstock','fi-dailyuse','fi-supplier','fi-notes'].forEach(id => document.getElementById(id).value = ''); document.getElementById('fi-cat').value = 'Lubricants'; document.getElementById('fi-unit').value = 'KG'; }
+
+function openEditItem(id) {
+  const it = items.find(i => i.id === id);
+  if(!it) return;
+  editItemId = id;
+  document.getElementById('modal-item-title').textContent = 'Edit Item';
+  document.getElementById('fi-name').value = it.name;
+  document.getElementById('fi-cat').value = it.category;
+  document.getElementById('fi-unit').value = it.unit;
+  document.getElementById('fi-stock').value = it.stock;
+  document.getElementById('fi-minstock').value = it.min_stock;
+  document.getElementById('fi-dailyuse').value = it.daily_use;
+  document.getElementById('fi-supplier').value = it.supplier || '';
+  document.getElementById('fi-notes').value = it.notes || '';
+  openModal('modal-item');
+}
+
+async function saveItem() {
+  const name = document.getElementById('fi-name').value.trim();
+  if(!name) { toast('Item name is required'); return; }
+  const data = {
+    name, category: document.getElementById('fi-cat').value,
+    unit: document.getElementById('fi-unit').value,
+    stock: parseFloat(document.getElementById('fi-stock').value) || 0,
+    min_stock: parseFloat(document.getElementById('fi-minstock').value) || 0,
+    daily_use: parseFloat(document.getElementById('fi-dailyuse').value) || 0,
+    supplier: document.getElementById('fi-supplier').value.trim(),
+    notes: document.getElementById('fi-notes').value.trim(),
+    updated_at: new Date().toISOString()
+  };
+  try {
+    if(editItemId) { await sb.update('items', editItemId, data); toast('✅ Item updated'); }
+    else { await sb.insert('items', data); toast('✅ Item added'); }
+    closeModal('modal-item');
+    await loadAll(); renderAll();
+  } catch(e) { toast('❌ Error: ' + e.message); }
+}
+
+async function deleteItem(id) {
+  if(!confirm('Delete this item? All consumption logs for it will also be removed.')) return;
+  try { await sb.delete('items', id); toast('🗑️ Item deleted'); await loadAll(); renderAll(); }
+  catch(e) { toast('❌ Error: ' + e.message); }
+}
+
+function renderItemsTable() {
+  const tbody = document.getElementById('items-table');
+  if(!items.length) { tbody.innerHTML = '<tr><td colspan="8" style="color:var(--muted);text-align:center;padding:24px">No items yet. Click "+ Add Item" to get started.</td></tr>'; return; }
+  const lowDays = settings.low_days || 5;
+  tbody.innerHTML = items.map(it => {
+    const days = it.daily_use > 0 ? it.stock / it.daily_use : null;
+    const pct = it.min_stock > 0 ? Math.min(100, (it.stock / (it.min_stock * 3)) * 100) : Math.min(100, it.stock * 5);
+    const barColor = !days || days > lowDays ? 'var(--green)' : days <= 3 ? 'var(--red)' : 'var(--amber)';
+    const statusBadge = !days ? '<span class="badge badge-gray">No Usage Data</span>' : days <= 3 ? '<span class="badge badge-red">Critical</span>' : days <= lowDays ? '<span class="badge badge-amber">Low</span>' : '<span class="badge badge-green">OK</span>';
+    const itemLogs = logs.filter(l => l.item_id === it.id);
+    return `<tr>
+      <td><strong>${it.name}</strong>${it.supplier ? `<br><span style="font-size:11px;color:var(--muted)">${it.supplier}</span>` : ''}</td>
+      <td><span class="badge badge-gray">${it.category}</span></td>
+      <td>${it.unit}</td>
+      <td><strong>${it.stock}</strong> ${it.unit}</td>
+      <td><div class="progress-bar" style="width:100px"><div class="progress-fill" style="width:${pct}%;background:${barColor}"></div></div></td>
+      <td>
+        <span id="daily-disp-${it.id}" style="cursor:pointer;border-bottom:1px dashed var(--border2)" onclick="editDailyUse('${it.id}')">${it.daily_use} ${it.unit}/day</span>
+        <input type="number" id="daily-inp-${it.id}" value="${it.daily_use}" step="0.01" min="0" style="display:none;width:80px;padding:4px 6px;font-size:12px" onblur="saveDailyUse('${it.id}')" onkeydown="if(event.key==='Enter')saveDailyUse('${it.id}')">
+      </td>
+      <td>${days !== null ? days.toFixed(1) + ' days' : '—'}</td>
+      <td style="white-space:nowrap">
+        ${statusBadge}
+        <button class="btn btn-sm" style="margin-left:4px" onclick="openLogModal('${it.id}')">Log</button>
+        ${itemLogs.length ? `<button class="btn btn-sm" onclick="showHistory('${it.id}')">History</button>` : ''}
+        <button class="btn btn-sm" onclick="openEditItem('${it.id}')">Edit</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteItem('${it.id}')">✕</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function editDailyUse(id) {
+  document.getElementById('daily-disp-' + id).style.display = 'none';
+  const inp = document.getElementById('daily-inp-' + id);
+  inp.style.display = ''; inp.focus(); inp.select();
+}
+async function saveDailyUse(id) {
+  const inp = document.getElementById('daily-inp-' + id);
+  const val = parseFloat(inp.value) || 0;
+  document.getElementById('daily-disp-' + id).style.display = '';
+  inp.style.display = 'none';
+  try { await sb.update('items', id, { daily_use: val }); await loadAll(); renderAll(); }
+  catch(e) { toast('❌ ' + e.message); }
+}
+
+// ============================================================
+// CONSUMPTION LOG
+// ============================================================
+function openLogModal(preselect) {
+  const sel = document.getElementById('fl-item');
+  sel.innerHTML = items.map(it => `<option value="${it.id}">${it.name} (${it.stock} ${it.unit})</option>`).join('');
+  if(preselect) sel.value = preselect;
+  document.getElementById('fl-qty').value = '';
+  document.getElementById('fl-date').value = new Date().toISOString().slice(0,10);
+  document.getElementById('fl-note').value = '';
+  openModal('modal-log');
+}
+
+async function saveLog() {
+  const itemId = document.getElementById('fl-item').value;
+  const qty = parseFloat(document.getElementById('fl-qty').value);
+  if(!qty || qty <= 0) { toast('Enter a valid quantity'); return; }
+  const it = items.find(i => i.id === itemId);
+  try {
+    await sb.insert('consumption_logs', { item_id: itemId, qty, note: document.getElementById('fl-note').value, logged_at: document.getElementById('fl-date').value });
+    await sb.update('items', itemId, { stock: Math.max(0, it.stock - qty) });
+    toast('✅ Consumption logged');
+    closeModal('modal-log'); await loadAll(); renderAll();
+  } catch(e) { toast('❌ ' + e.message); }
+}
+
+// Quick consume
+let qcItems = [];
+function qcSearch(val) {
+  const dd = document.getElementById('qc-dropdown');
+  qcItems = items.filter(it => it.name.toLowerCase().includes(val.toLowerCase()));
+  if(!val || !qcItems.length) { dd.style.display = 'none'; return; }
+  dd.style.display = '';
+  qcDropIdx = -1;
+  dd.innerHTML = qcItems.map((it, i) => `<div id="qc-dd-${i}" style="padding:8px 12px;cursor:pointer;font-size:13px" onmousedown="qcSelect('${it.id}','${it.name.replace(/'/g,"\\'")}')" onmouseover="qcHover(${i})">${it.name} <span style="color:var(--muted);font-size:11px">(${it.stock} ${it.unit})</span></div>`).join('');
+}
+function qcHover(i) { document.querySelectorAll('#qc-dropdown > div').forEach((d,j) => d.style.background = j===i ? 'var(--bg)' : ''); qcDropIdx = i; }
+function qcKey(e) {
+  const dd = document.getElementById('qc-dropdown');
+  if(dd.style.display === 'none') return;
+  if(e.key === 'ArrowDown') { qcDropIdx = Math.min(qcDropIdx+1, qcItems.length-1); qcHover(qcDropIdx); }
+  else if(e.key === 'ArrowUp') { qcDropIdx = Math.max(qcDropIdx-1, 0); qcHover(qcDropIdx); }
+  else if(e.key === 'Enter' && qcDropIdx >= 0) { const it = qcItems[qcDropIdx]; qcSelect(it.id, it.name); }
+  else if(e.key === 'Escape') { dd.style.display = 'none'; }
+}
+function qcSelect(id, name) {
+  qcSelectedId = id;
+  document.getElementById('qc-search').value = name;
+  document.getElementById('qc-dropdown').style.display = 'none';
+  const it = items.find(i => i.id === id);
+  if(it) {
+    const info = document.getElementById('qc-item-info');
+    info.style.display = '';
+    info.textContent = `📦 Stock: ${it.stock} ${it.unit} | Avg daily use: ${it.daily_use} ${it.unit}/day | Category: ${it.category}`;
+  }
+}
+function qcValidateQty() {
+  const val = parseFloat(document.getElementById('qc-qty').value) || 0;
+  const it = qcSelectedId ? items.find(i => i.id === qcSelectedId) : null;
+  const errEl = document.getElementById('qc-qty-err');
+  if(it && val > it.stock) { errEl.textContent = `⚠️ Exceeds stock (${it.stock} ${it.unit})`; errEl.style.display = ''; }
+  else { errEl.style.display = 'none'; }
+}
+async function quickConsume() {
+  if(!qcSelectedId) { toast('Select an item first'); return; }
+  const qty = parseFloat(document.getElementById('qc-qty').value);
+  if(!qty || qty <= 0) { toast('Enter quantity'); return; }
+  const it = items.find(i => i.id === qcSelectedId);
+  if(!it) return;
+  try {
+    await sb.insert('consumption_logs', { item_id: qcSelectedId, qty, note: document.getElementById('qc-note').value, logged_at: new Date().toISOString().slice(0,10) });
+    await sb.update('items', qcSelectedId, { stock: Math.max(0, it.stock - qty) });
+    toast(`✅ Logged ${qty} ${it.unit} for ${it.name}`);
+    document.getElementById('qc-search').value = '';
+    document.getElementById('qc-qty').value = '';
+    document.getElementById('qc-note').value = '';
+    document.getElementById('qc-item-info').style.display = 'none';
+    qcSelectedId = null;
+    await loadAll(); renderAll();
+  } catch(e) { toast('❌ ' + e.message); }
+}
+
+// History
+function showHistory(itemId) {
+  const it = items.find(i => i.id === itemId);
+  document.getElementById('modal-history-title').textContent = (it ? it.name : '') + ' — Consumption History';
+  const itemLogs = logs.filter(l => l.item_id === itemId);
+  document.getElementById('history-list').innerHTML = itemLogs.length ? itemLogs.map(l => `<div class="log-entry"><span class="log-date">${l.logged_at}</span><span style="flex:1">${l.note || '—'}</span><strong>-${l.qty} ${it?.unit||''}</strong></div>`).join('') : '<div style="color:var(--muted);font-size:13px">No logs yet.</div>';
+  openModal('modal-history');
+}
+
+// ============================================================
+// FORECAST
+// ============================================================
+function renderForecast() {
+  const lowDays = settings.low_days || 5;
+  const tbody = document.getElementById('forecast-table');
+  const alerts = document.getElementById('forecast-alerts');
+  if(!items.length) { tbody.innerHTML = '<tr><td colspan="7" style="color:var(--muted);text-align:center;padding:24px">No items tracked yet.</td></tr>'; alerts.innerHTML = ''; return; }
+  let criticalCount = 0;
+  tbody.innerHTML = items.map(it => {
+    const dailyUse = it.daily_use || 0;
+    const daysLeft = dailyUse > 0 ? it.stock / dailyUse : null;
+    const need15 = dailyUse * 15;
+    const orderQty = dailyUse > 0 ? Math.max(0, need15 - it.stock) : 0;
+    let rowClass = '', badge = '<span class="badge badge-gray">No Data</span>';
+    if(daysLeft !== null) {
+      if(daysLeft <= 3) { rowClass = 'forecast-row-critical'; badge = '<span class="badge badge-red">🔴 Critical</span>'; criticalCount++; }
+      else if(daysLeft <= lowDays) { rowClass = 'forecast-row-warn'; badge = '<span class="badge badge-amber">🟡 Low</span>'; }
+      else { badge = '<span class="badge badge-green">✅ OK</span>'; }
+    }
+    return `<tr class="${rowClass}"><td><strong>${it.name}</strong></td><td>${it.stock} ${it.unit}</td><td>${dailyUse} ${it.unit}</td><td>${need15.toFixed(1)} ${it.unit}</td><td>${daysLeft !== null ? daysLeft.toFixed(1) + ' days' : '—'}</td><td>${orderQty > 0 ? '<strong>' + orderQty.toFixed(1) + ' ' + it.unit + '</strong>' : '—'}</td><td>${badge}</td></tr>`;
+  }).join('');
+  alerts.innerHTML = criticalCount > 0 ? `<div class="alert alert-red">🚨 ${criticalCount} item(s) will run out within 3 days! Place order immediately.</div>` : '';
+}
+
+// ============================================================
+// REQUISITIONS
+// ============================================================
+function openReqForm() { document.getElementById('req-form-panel').style.display = ''; }
+function closeReqForm() { document.getElementById('req-form-panel').style.display = 'none'; ['rq-name','rq-dept','rq-machine','rq-item','rq-qty','rq-desc'].forEach(id => document.getElementById(id).value = ''); document.getElementById('rq-priority').value = 'normal'; document.getElementById('rq-reqdate').value = ''; }
+
+async function saveReq() {
+  const name = document.getElementById('rq-name').value.trim();
+  const item = document.getElementById('rq-item').value.trim();
+  if(!name || !item) { toast('Operator name and item required'); return; }
+  try {
+    await sb.insert('requisitions', {
+      operator_name: name, department: document.getElementById('rq-dept').value,
+      machine: document.getElementById('rq-machine').value,
+      item_name: item, qty_needed: document.getElementById('rq-qty').value,
+      priority: document.getElementById('rq-priority').value,
+      req_date: document.getElementById('rq-reqdate').value || null,
+      description: document.getElementById('rq-desc').value, status: 'open'
+    });
+    toast('✅ Requisition submitted'); closeReqForm(); await loadAll(); renderAll();
+  } catch(e) { toast('❌ ' + e.message); }
+}
+
+function filterReqs(f, btn) {
+  reqFilter = f;
+  document.querySelectorAll('#page-requisitions .tabs .tab').forEach(t => t.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  renderReqs();
+}
+
+function renderReqs() {
+  const filtered = reqFilter === 'all' ? reqs : reqs.filter(r => r.status === reqFilter);
+  const div = document.getElementById('reqs-list');
+  if(!filtered.length) { div.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:20px 0">No requisitions found.</div>'; return; }
+  div.innerHTML = filtered.map(r => {
+    const priCls = r.priority === 'critical' ? 'badge-red' : r.priority === 'urgent' ? 'badge-amber' : 'badge-green';
+    const stCls = r.status === 'open' ? 'badge-blue' : r.status === 'closed' ? 'badge-green' : 'badge-gray';
+    const date = new Date(r.created_at).toLocaleDateString('en-IN');
+    return `<div class="req-card">
+      <div class="req-header">
+        <div><div class="req-title">${r.item_name} ${r.qty_needed ? '— ' + r.qty_needed : ''}</div><div class="req-meta">By ${r.operator_name} ${r.department ? '· ' + r.department : ''} ${r.machine ? '· ' + r.machine : ''} · ${date}</div></div>
+        <div style="display:flex;gap:6px;flex-shrink:0"><span class="badge ${priCls}">${r.priority}</span><span class="badge ${stCls}">${r.status}</span></div>
+      </div>
+      ${r.description ? `<div class="req-body">${r.description}</div>` : ''}
+      ${r.manager_note ? `<div class="alert alert-green" style="margin-bottom:8px">💬 Manager: ${r.manager_note}</div>` : ''}
+      <div class="req-footer">
+        ${r.status === 'open' ? `<button class="btn btn-sm btn-green" onclick="updateReqStatus('${r.id}','closed')">✅ Close</button><button class="btn btn-sm btn-danger" onclick="updateReqStatus('${r.id}','declined')">❌ Decline</button>` : ''}
+        <button class="btn btn-sm" onclick="addManagerNote('${r.id}')">💬 Note</button>
+        <button class="btn btn-sm btn-danger" style="margin-left:auto" onclick="deleteReq('${r.id}')">🗑️</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function updateReqStatus(id, status) {
+  try { await sb.update('requisitions', id, { status }); toast('✅ Status updated'); await loadAll(); renderAll(); }
+  catch(e) { toast('❌ ' + e.message); }
+}
+async function deleteReq(id) {
+  if(!confirm('Delete this requisition?')) return;
+  try { await sb.delete('requisitions', id); toast('🗑️ Deleted'); await loadAll(); renderAll(); }
+  catch(e) { toast('❌ ' + e.message); }
+}
+async function addManagerNote(id) {
+  const note = prompt('Add/update manager note:');
+  if(note === null) return;
+  try { await sb.update('requisitions', id, { manager_note: note }); await loadAll(); renderAll(); }
+  catch(e) { toast('❌ ' + e.message); }
+}
+
+// ============================================================
+// ANALYTICS
+// ============================================================
+function setAnalyticsRange(days) {
+  const to = new Date(); const from = new Date(); from.setDate(from.getDate() - days);
+  document.getElementById('an-from').value = from.toISOString().slice(0,10);
+  document.getElementById('an-to').value = to.toISOString().slice(0,10);
+  renderAnalytics();
+}
+
+function renderAnalytics() {
+  const fromStr = document.getElementById('an-from').value;
+  const toStr = document.getElementById('an-to').value;
+  const catFilter = document.getElementById('an-cat').value;
+
+  // Populate category filter
+  const cats = [...new Set(items.map(i => i.category))].sort();
+  const catSel = document.getElementById('an-cat');
+  if(catSel.options.length <= 1) cats.forEach(c => { const o = document.createElement('option'); o.value=c; o.textContent=c; catSel.appendChild(o); });
+
+  let filteredLogs = logs;
+  if(fromStr) filteredLogs = filteredLogs.filter(l => l.logged_at >= fromStr);
+  if(toStr) filteredLogs = filteredLogs.filter(l => l.logged_at <= toStr);
+
+  let filteredItems = catFilter === 'all' ? items : items.filter(i => i.category === catFilter);
+  const activeDays = [...new Set(filteredLogs.map(l => l.logged_at))].length;
+  const totalUsed = filteredLogs.reduce((s, l) => s + l.qty, 0);
+  const itemsNoLogs = filteredItems.filter(it => !filteredLogs.some(l => l.item_id === it.id)).length;
+
+  document.getElementById('an-o1').textContent = filteredItems.length;
+  document.getElementById('an-o2').textContent = totalUsed.toFixed(1);
+  document.getElementById('an-o3').textContent = activeDays;
+  document.getElementById('an-o4').textContent = itemsNoLogs;
+
+  // Bar chart — top items
+  const itemTotals = filteredItems.map(it => ({ name: it.name, total: filteredLogs.filter(l => l.item_id === it.id).reduce((s,l) => s+l.qty, 0) })).filter(i => i.total > 0).sort((a,b) => b.total-a.total).slice(0, 10);
+  if(anBarChart) { anBarChart.destroy(); anBarChart = null; }
+  const barCtx = document.getElementById('an-bar-chart').getContext('2d');
+  anBarChart = new Chart(barCtx, { type: 'bar', data: { labels: itemTotals.map(i=>i.name), datasets: [{ data: itemTotals.map(i=>i.total), backgroundColor: '#c85a2a', borderRadius: 4 }] }, options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } } });
+
+  // Summary table
+  const tbody = document.getElementById('an-summary-table');
+  const lowDays = settings.low_days || 5;
+  tbody.innerHTML = filteredItems.map(it => {
+    const used = filteredLogs.filter(l => l.item_id === it.id).reduce((s,l) => s+l.qty, 0);
+    const avgDay = activeDays > 0 ? used / activeDays : 0;
+    const daysLeft = avgDay > 0 ? (it.stock / avgDay).toFixed(1) : '—';
+    const badge = avgDay === 0 ? '<span class="badge badge-gray">No Data</span>' : +daysLeft <= 3 ? '<span class="badge badge-red">Critical</span>' : +daysLeft <= lowDays ? '<span class="badge badge-amber">Low</span>' : '<span class="badge badge-green">OK</span>';
+    return `<tr><td>${it.name}</td><td>${it.unit}</td><td>${it.stock}</td><td>${used.toFixed(2)}</td><td>${avgDay.toFixed(2)}</td><td>${daysLeft}</td><td>${badge}</td></tr>`;
+  }).join('');
+}
+
+// ============================================================
+// MACHINES
+// ============================================================
+function openMachineModal(id) {
+  editMachineId = id || null;
+  document.getElementById('modal-machine-title').textContent = id ? 'Edit Machine' : 'Add Machine';
+  if(id) {
+    const m = machines.find(x => x.id === id);
+    if(!m) return;
+    ['mc-name','mc-id','mc-loc','mc-model','mc-oiltype','mc-oildate','mc-oilfreq','mc-greasetype','mc-greasedate','mc-greasefreq','mc-maintdate','mc-maintfreq','mc-notes'].forEach(fid => {
+      const key = fid.replace('mc-', '').replace(/-([a-z])/g, (_,c) => c.toUpperCase());
+      const map = { 'name':'name','id':'machine_id','loc':'location','model':'model','oiltype':'oil_type','oildate':'oil_last_date','oilfreq':'oil_freq_days','greasetype':'grease_type','greasedate':'grease_last_date','greasefreq':'grease_freq_days','maintdate':'maint_last_date','maintfreq':'maint_freq_days','notes':'notes' };
+      const field = map[fid.replace('mc-','')];
+      if(field && m[field] !== undefined) document.getElementById(fid).value = m[field] || '';
+    });
+  } else {
+    ['mc-name','mc-id','mc-loc','mc-model','mc-oiltype','mc-oildate','mc-greasetype','mc-greasedate','mc-maintdate','mc-notes'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('mc-oilfreq').value = 7;
+    document.getElementById('mc-greasefreq').value = 30;
+    document.getElementById('mc-maintfreq').value = 90;
+  }
+  openModal('modal-machine');
+}
+
+async function saveMachine() {
+  const name = document.getElementById('mc-name').value.trim();
+  if(!name) { toast('Machine name required'); return; }
+  const data = {
+    name, machine_id: document.getElementById('mc-id').value,
+    location: document.getElementById('mc-loc').value,
+    model: document.getElementById('mc-model').value,
+    oil_type: document.getElementById('mc-oiltype').value,
+    oil_last_date: document.getElementById('mc-oildate').value || null,
+    oil_freq_days: parseInt(document.getElementById('mc-oilfreq').value) || 7,
+    grease_type: document.getElementById('mc-greasetype').value,
+    grease_last_date: document.getElementById('mc-greasedate').value || null,
+    grease_freq_days: parseInt(document.getElementById('mc-greasefreq').value) || 30,
+    maint_last_date: document.getElementById('mc-maintdate').value || null,
+    maint_freq_days: parseInt(document.getElementById('mc-maintfreq').value) || 90,
+    notes: document.getElementById('mc-notes').value
+  };
+  try {
+    if(editMachineId) { await sb.update('machines', editMachineId, data); toast('✅ Machine updated'); }
+    else { await sb.insert('machines', data); toast('✅ Machine added'); }
+    closeModal('modal-machine'); await loadAll(); renderAll();
+  } catch(e) { toast('❌ ' + e.message); }
+}
+
+async function deleteMachine(id) {
+  if(!confirm('Delete this machine?')) return;
+  try { await sb.delete('machines', id); toast('🗑️ Deleted'); await loadAll(); renderAll(); }
+  catch(e) { toast('❌ ' + e.message); }
+}
+
+async function markDone(machineId, type) {
+  const today = new Date().toISOString().slice(0,10);
+  const field = type === 'oil' ? 'oil_last_date' : type === 'grease' ? 'grease_last_date' : 'maint_last_date';
+  try { await sb.update('machines', machineId, { [field]: today }); toast(`✅ ${type} marked done`); await loadAll(); renderAll(); }
+  catch(e) { toast('❌ ' + e.message); }
+}
+
+function renderMachines() {
+  const grid = document.getElementById('machines-grid');
+  if(!machines.length) { grid.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:20px 0;grid-column:1/-1">No machines added yet.</div>'; return; }
+  const today = new Date();
+  grid.innerHTML = machines.map(m => {
+    const checks = [
+      { key: 'oil', label: '🛢️ Oil', last: m.oil_last_date, freq: m.oil_freq_days, type: m.oil_type },
+      { key: 'grease', label: '🧴 Grease', last: m.grease_last_date, freq: m.grease_freq_days, type: m.grease_type },
+      { key: 'maint', label: '🔧 Maintenance', last: m.maint_last_date, freq: m.maint_freq_days, type: '' },
+    ];
+    const statusItems = checks.map(c => {
+      if(!c.last || !c.freq) return '';
+      const next = new Date(c.last); next.setDate(next.getDate() + c.freq);
+      const daysLeft = Math.ceil((next - today) / 86400000);
+      const cls = daysLeft <= 0 ? 'badge-red' : daysLeft <= 3 ? 'badge-amber' : 'badge-green';
+      const txt = daysLeft <= 0 ? 'Overdue' : `${daysLeft}d left`;
+      return `<div class="meta-item"><div class="meta-label">${c.label} ${c.type ? '('+c.type+')' : ''}</div><div class="meta-val"><span class="badge ${cls}">${txt}</span></div><button class="btn btn-sm" style="margin-top:4px" onclick="markDone('${m.id}','${c.key}')">Mark Done</button></div>`;
+    }).filter(Boolean);
+    return `<div class="machine-card">
+      <div class="machine-name">${m.name}</div>
+      <div class="machine-id">${m.machine_id || ''} ${m.location ? '· ' + m.location : ''}</div>
+      ${m.model ? `<div style="font-size:12px;color:var(--muted);margin-top:4px">${m.model}</div>` : ''}
+      <div class="machine-meta">${statusItems.join('')}</div>
+      ${m.notes ? `<div style="font-size:12px;color:var(--muted);margin-top:10px;border-top:1px solid var(--border);padding-top:8px">${m.notes}</div>` : ''}
+      <div class="machine-actions">
+        <button class="btn btn-sm" onclick="openMachineModal('${m.id}')">✏️ Edit</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteMachine('${m.id}')">🗑️ Delete</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ============================================================
+// SETTINGS
+// ============================================================
+function renderSettings() {
+  document.getElementById('s-company').value = settings.company || '';
+  document.getElementById('s-manager').value = settings.manager || '';
+  document.getElementById('s-lowdays').value = settings.low_days || 5;
+}
+
+async function saveSettings() {
+  try {
+    await sb.upsert('settings', { id: 'singleton', company: document.getElementById('s-company').value, manager: document.getElementById('s-manager').value, low_days: parseInt(document.getElementById('s-lowdays').value) || 5 }, 'id');
+    toast('✅ Settings saved'); await loadAll(); renderAll();
+  } catch(e) { toast('❌ ' + e.message); }
+}
+
+async function clearAllData() {
+  if(!confirm('Clear ALL data? This cannot be undone!')) return;
+  if(!confirm('Are you absolutely sure? This will delete ALL items, logs, requisitions and machines.')) return;
+  try {
+    // Delete all records from each table
+    const dels = ['items','consumption_logs','requisitions','machines'].map(async t => {
+      const rows = await sb.query(t, { select: 'id' });
+      return Promise.all((rows||[]).map(r => sb.delete(t, r.id)));
+    });
+    await Promise.all(dels);
+    toast('🗑️ All data cleared'); await loadAll(); renderAll();
+  } catch(e) { toast('❌ ' + e.message); }
+}
+
+// ============================================================
+// MODAL HELPERS
+// ============================================================
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// Close modal on backdrop click
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', e => { if(e.target === overlay) overlay.classList.remove('open'); });
+});
+
+// ============================================================
+// TOAST
+// ============================================================
+let toastTimer;
+function toast(msg, duration = 2500) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), duration);
+}
+
+// ============================================================
+// DEFAULT ANALYTICS RANGE
+// ============================================================
+window.addEventListener('DOMContentLoaded', () => {
+  setAnalyticsRange(30);
+  init();
+});
+</script>
+</body>
+</html>
