@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Requisition Form</title>
+  <style>
+    :root{
+      --bg:#f4f2ee;
+      --card:#ffffff;
+      --border:#e2ddd6;
+      --text:#1a1917;
+      --muted:#6b6860;
+      --accent:#c85a2a;
+      --font: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --radius:14px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      background:var(--bg);
+      color:var(--text);
+      font-family:var(--font);
+      padding:24px;
+    }
+    .wrap{
+      max-width:900px;
+      margin:0 auto;
+    }
+    .card{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      padding:22px;
+    }
+    h1{
+      margin:0 0 18px;
+      font-size:28px;
+      line-height:1.2;
+    }
+    .grid{
+      display:grid;
+      gap:14px;
+    }
+    .grid-3{grid-template-columns:1fr 1fr 1fr}
+    .grid-2{grid-template-columns:1fr 1fr}
+    .field{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+    }
+    label{
+      font-size:12px;
+      font-weight:700;
+      color:var(--muted);
+      text-transform:uppercase;
+      letter-spacing:.04em;
+    }
+    input, select, textarea, button{
+      font:inherit;
+    }
+    input, select, textarea{
+      width:100%;
+      border:1px solid #cfc8bf;
+      border-radius:10px;
+      padding:12px 14px;
+      background:#fff;
+      color:var(--text);
+      outline:none;
+    }
+    textarea{
+      min-height:120px;
+      resize:vertical;
+    }
+    .actions{
+      display:flex;
+      justify-content:flex-end;
+      margin-top:18px;
+    }
+    button{
+      border:0;
+      background:var(--accent);
+      color:#fff;
+      padding:12px 18px;
+      border-radius:10px;
+      font-weight:700;
+      cursor:pointer;
+    }
+    button:disabled{
+      opacity:.7;
+      cursor:not-allowed;
+    }
+    #msg{
+      margin-top:14px;
+      font-size:14px;
+      min-height:20px;
+    }
+    .ok{color:#197a40}
+    .err{color:#b42318}
+    @media (max-width:700px){
+      body{padding:14px}
+      .grid-3,.grid-2{grid-template-columns:1fr}
+      .card{padding:16px}
+      h1{font-size:24px}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>Requisition Form</h1>
+
+      <form id="reqForm">
+        <div class="grid grid-3">
+          <div class="field">
+            <label for="operator_name">Operator Name *</label>
+            <input id="operator_name" name="operator_name" type="text" required />
+          </div>
+          <div class="field">
+            <label for="department">Department / Section</label>
+            <input id="department" name="department" type="text" />
+          </div>
+          <div class="field">
+            <label for="machine">Machine / Asset</label>
+            <input id="machine" name="machine" type="text" />
+          </div>
+        </div>
+
+        <div class="grid grid-2" style="margin-top:14px;">
+          <div class="field">
+            <label for="item_name">Item Required *</label>
+            <input id="item_name" name="item_name" type="text" required />
+          </div>
+          <div class="field">
+            <label for="qty_needed">Quantity Needed</label>
+            <input id="qty_needed" name="qty_needed" type="text" />
+          </div>
+        </div>
+
+        <div class="grid grid-2" style="margin-top:14px;">
+          <div class="field">
+            <label for="priority">Priority</label>
+            <select id="priority" name="priority">
+              <option value="normal">Normal</option>
+              <option value="urgent">Urgent</option>
+              <option value="critical">Critical</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="req_date">Required By Date</label>
+            <input id="req_date" name="req_date" type="date" />
+          </div>
+        </div>
+
+        <div class="field" style="margin-top:14px;">
+          <label for="description">Specifications / Reason</label>
+          <textarea id="description" name="description"></textarea>
+        </div>
+
+        <div class="actions">
+          <button id="submitBtn" type="submit">Submit</button>
+        </div>
+
+        <div id="msg"></div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = "https://fhrichslhlrvcbwjihgr.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_OO8FqAAK-CEMDXuZKsWWkQ_7KcxVNOi";
+    const TABLE = "requisitions";
+
+    const form = document.getElementById("reqForm");
+    const msg = document.getElementById("msg");
+    const submitBtn = document.getElementById("submitBtn");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      msg.className = "";
+      msg.textContent = "";
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Submitting...";
+
+      const payload = {
+        operator_name: form.operator_name.value.trim(),
+        department: form.department.value.trim(),
+        machine: form.machine.value.trim(),
+        item_name: form.item_name.value.trim(),
+        qty_needed: form.qty_needed.value.trim(),
+        priority: form.priority.value,
+        req_date: form.req_date.value || null,
+        description: form.description.value.trim(),
+        status: "open"
+      };
+
+      try {
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/${TABLE}`, {
+          method: "POST",
+          headers: {
+            "apikey": SUPABASE_KEY,
+            "Authorization": `Bearer ${SUPABASE_KEY}`,
+            "Content-Type": "application/json",
+            "Prefer": "return=representation"
+          },
+          body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) {
+          const errText = await res.text();
+          throw new Error(errText || "Submit failed");
+        }
+
+        form.reset();
+        msg.className = "ok";
+        msg.textContent = "Submitted successfully.";
+      } catch (err) {
+        msg.className = "err";
+        msg.textContent = "Error: " + err.message;
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Submit";
+      }
+    });
+  </script>
+</body>
+</html>
