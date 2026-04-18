@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OpsDesk — Quick Consumption</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f4f2ee; --card: #ffffff; --border: #e2ddd6; --border2: #ccc8c0;
+  --text: #1a1917; --muted: #6b6860; --accent: #c85a2a; --accent-bg: #fdf0ea;
+  --green: #2a9c5a; --green-bg: #eafaf2;
+  --amber: #c87c2a; --amber-bg: #fdf5ea; --red: #c82a2a; --red-bg: #fdeaea;
+  --font: 'DM Sans', sans-serif; --mono: 'DM Mono', monospace;
+  --radius: 10px; --radius-lg: 16px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: var(--font); background: var(--bg); color: var(--text);
+  min-height: 100vh; font-size: 14px;
+  display: flex; align-items: flex-start; justify-content: center;
+  padding: 28px 16px;
+}
+.container { width: 100%; max-width: 520px; }
+
+.logo-bar { text-align: center; margin-bottom: 24px; }
+.logo-text { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; color: var(--text); }
+.logo-text span { color: var(--accent); }
+.logo-sub { font-size: 12px; color: var(--muted); margin-top: 4px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.8px; }
+
+.card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 28px; box-shadow: 0 4px 24px rgba(0,0,0,0.06); }
+.card-title { font-size: 18px; font-weight: 700; margin-bottom: 4px; letter-spacing: -0.3px; }
+.card-sub { font-size: 12px; color: var(--muted); margin-bottom: 24px; }
+
+label { display: block; font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+.form-group { margin-bottom: 18px; }
+
+input[type=number], input[type=text], input[type=date], textarea {
+  font-family: var(--font); font-size: 14px; padding: 11px 14px;
+  border: 1.5px solid var(--border2); border-radius: var(--radius);
+  background: var(--card); color: var(--text); outline: none;
+  transition: border 0.15s, box-shadow 0.15s; width: 100%;
+}
+input:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(200,90,42,0.1); }
+textarea { resize: vertical; min-height: 72px; }
+
+/* ── Searchable Select ── */
+.sel-wrap { position: relative; }
+
+.sel-trigger {
+  width: 100%; padding: 11px 38px 11px 14px;
+  border: 1.5px solid var(--border2); border-radius: var(--radius);
+  background: var(--card); color: var(--text);
+  font-family: var(--font); font-size: 14px;
+  cursor: pointer; text-align: left;
+  display: flex; align-items: center; gap: 8px;
+  transition: border 0.15s, box-shadow 0.15s;
+  outline: none; white-space: nowrap; overflow: hidden;
+}
+.sel-trigger.open, .sel-trigger:focus {
+  border-color: var(--accent); box-shadow: 0 0 0 3px rgba(200,90,42,0.1);
+}
+.sel-trigger-text { flex: 1; overflow: hidden; text-overflow: ellipsis; }
+.sel-trigger-text.ph { color: var(--muted); }
+.sel-chevron {
+  position: absolute; right: 13px; top: 50%; transform: translateY(-50%);
+  font-size: 11px; color: var(--muted); pointer-events: none;
+  transition: transform 0.2s;
+}
+.sel-chevron.open { transform: translateY(-50%) rotate(180deg); }
+
+.sel-panel {
+  display: none; position: absolute; top: calc(100% + 5px); left: 0; right: 0;
+  background: var(--card); border: 1.5px solid var(--accent); border-radius: var(--radius);
+  z-index: 200; box-shadow: 0 10px 40px rgba(0,0,0,0.15); overflow: hidden;
+}
+.sel-panel.open { display: block; }
+
+.sel-search-box {
+  padding: 10px 10px 8px; background: var(--bg); border-bottom: 1px solid var(--border);
+}
+.sel-search-input {
+  width: 100%; padding: 8px 12px; font-size: 13px;
+  border: 1.5px solid var(--border2); border-radius: 8px;
+  background: var(--card); font-family: var(--font); outline: none; color: var(--text);
+}
+.sel-search-input:focus { border-color: var(--accent); }
+
+.sel-list { max-height: 230px; overflow-y: auto; }
+
+.sel-option {
+  padding: 10px 14px; cursor: pointer; border-bottom: 1px solid var(--border);
+  transition: background 0.08s;
+}
+.sel-option:last-child { border-bottom: none; }
+.sel-option:hover, .sel-option.hi { background: var(--accent-bg); }
+.sel-option.chosen { background: #fde8da; }
+.sel-opt-name { font-size: 13px; font-weight: 600; }
+.sel-opt-meta { font-size: 11px; color: var(--muted); margin-top: 2px; display: flex; gap: 10px; flex-wrap: wrap; }
+.sel-empty { padding: 18px 14px; text-align: center; color: var(--muted); font-size: 13px; }
+
+/* Item info box */
+.item-info-box {
+  display: none; background: var(--accent-bg); border: 1px solid #f0c4a8;
+  border-radius: 8px; padding: 10px 14px; font-size: 12px; margin-top: 8px; line-height: 1.7;
+}
+.item-info-box strong { color: var(--accent); }
+
+/* Qty */
+.qty-wrap { position: relative; }
+.qty-unit { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 12px; font-weight: 700; color: var(--muted); pointer-events: none; font-family: var(--mono); }
+.qty-err { font-size: 11px; color: var(--red); margin-top: 5px; display: none; font-weight: 600; }
+
+.date-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+/* Buttons */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 20px; border-radius: var(--radius); font-size: 14px; font-weight: 600; cursor: pointer; border: 1.5px solid var(--border2); background: var(--card); color: var(--text); font-family: var(--font); transition: all 0.15s; width: 100%; }
+.btn:hover { background: var(--bg); }
+.btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); font-size: 15px; padding: 13px 20px; }
+.btn-primary:hover { background: #b34d22; }
+.btn-primary:disabled { background: #d4a48c; border-color: #d4a48c; cursor: not-allowed; }
+.btn-secondary { background: var(--bg); border-color: var(--border2); font-size: 13px; }
+.divider { border: none; border-top: 1px solid var(--border); margin: 22px 0; }
+
+/* Status */
+.status-bar { display: flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 8px; font-size: 12px; font-weight: 600; margin-bottom: 20px; }
+.status-bar.connected { background: var(--green-bg); color: var(--green); border: 1px solid #80d4a8; }
+.status-bar.loading { background: var(--amber-bg); color: var(--amber); border: 1px solid #f0c878; }
+.status-bar.error { background: var(--red-bg); color: var(--red); border: 1px solid #f0a0a0; }
+
+/* Badge */
+.badge { display: inline-flex; align-items: center; padding: 1px 7px; border-radius: 20px; font-size: 10px; font-weight: 700; }
+.badge-red { background: var(--red-bg); color: var(--red); }
+.badge-amber { background: var(--amber-bg); color: var(--amber); }
+.badge-green { background: var(--green-bg); color: var(--green); }
+
+/* Recent log */
+.log-section { margin-top: 24px; }
+.log-title { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
+.log-entry { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--border); font-size: 12px; }
+.log-entry:last-child { border-bottom: none; }
+.log-item { flex: 1; font-weight: 600; }
+.log-qty { font-family: var(--mono); font-size: 11px; color: var(--red); font-weight: 700; }
+.log-time { font-size: 11px; color: var(--muted); font-family: var(--mono); }
+
+/* Toast */
+.toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(10px); background: var(--text); color: #fff; padding: 12px 22px; border-radius: 30px; font-size: 13px; font-weight: 600; z-index: 999; opacity: 0; transition: all 0.3s; pointer-events: none; white-space: nowrap; box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+.footer-link { text-align: center; margin-top: 16px; font-size: 12px; color: var(--muted); }
+.footer-link a { color: var(--accent); text-decoration: none; font-weight: 600; }
+.footer-link a:hover { text-decoration: underline; }
+
+@media (max-width: 480px) {
+  .card { padding: 20px; }
+  .date-row { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Logo -->
+  <div class="logo-bar">
+    <div class="logo-text">Ops<span>Desk</span></div>
+    <div class="logo-sub">⚡ Quick Consumption Form</div>
+  </div>
+
+  <!-- DB Status -->
+  <div class="status-bar loading" id="db-status">
+    <span id="status-icon">⏳</span>
+    <span id="status-text">Connecting to database…</span>
+    <button onclick="loadItems()" style="margin-left:auto;background:none;border:none;cursor:pointer;font-size:11px;font-weight:700;color:inherit;text-decoration:underline">Retry</button>
+  </div>
+
+  <!-- Main Card -->
+  <div class="card">
+    <div class="card-title">⚡ Log Consumption</div>
+    <div class="card-sub">Fill in the details below to record item usage</div>
+
+    <!-- ── Searchable Select for Item ── -->
+    <div class="form-group">
+      <label>Item Name *</label>
+      <div class="sel-wrap" id="sel-wrap">
+        <!-- Trigger button -->
+        <button type="button" class="sel-trigger" id="sel-trigger" onclick="togglePanel()">
+          <span class="sel-trigger-text ph" id="sel-label">Select an item…</span>
+        </button>
+        <span class="sel-chevron" id="sel-chevron">▼</span>
+        <input type="hidden" id="qc-item-id">
+
+        <!-- Dropdown panel -->
+        <div class="sel-panel" id="sel-panel">
+          <div class="sel-search-box">
+            <input
+              type="text"
+              class="sel-search-input"
+              id="sel-search"
+              placeholder="🔍  Search by name or category…"
+              oninput="filterOptions(this.value)"
+              onkeydown="handleKey(event)"
+              autocomplete="off"
+            >
+          </div>
+          <div class="sel-list" id="sel-list">
+            <div class="sel-empty">Loading items…</div>
+          </div>
+        </div>
+      </div>
+      <!-- Selected item info card -->
+      <div class="item-info-box" id="item-info"></div>
+    </div>
+
+    <!-- Quantity -->
+    <div class="form-group">
+      <label>Quantity Used *</label>
+      <div class="qty-wrap">
+        <input type="number" id="qc-qty" placeholder="e.g. 2.5" min="0.01" step="0.01" oninput="validateQty()" style="padding-right:52px">
+        <span class="qty-unit" id="qty-unit-label"></span>
+      </div>
+      <div class="qty-err" id="qty-err"></div>
+    </div>
+
+    <!-- Date & Logged By -->
+    <div class="date-row">
+      <div class="form-group">
+        <label>Date *</label>
+        <input type="date" id="qc-date">
+      </div>
+      <div class="form-group">
+        <label>Logged By</label>
+        <input type="text" id="qc-logged-by" placeholder="Your name">
+      </div>
+    </div>
+
+    <!-- Note -->
+    <div class="form-group" style="margin-bottom:24px">
+      <label>Note / Reason (optional)</label>
+      <textarea id="qc-note" placeholder="e.g. Used for Machine CNC-01 during morning shift…"></textarea>
+    </div>
+
+    <!-- Submit -->
+    <button class="btn btn-primary" id="submit-btn" onclick="submitConsumption()">✅ Log Usage</button>
+    <hr class="divider">
+    <button class="btn btn-secondary" onclick="resetForm()">🔄 Clear Form</button>
+  </div>
+
+  <!-- Recent Logs (session) -->
+  <div class="log-section" id="recent-section" style="display:none">
+    <div class="log-title">✅ Logged This Session</div>
+    <div id="recent-log-list"></div>
+  </div>
+
+  <div class="footer-link">
+    <a href="Index.html">← Back to OpsDesk Dashboard</a>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Supabase config (same as main app) ──
+const SUPABASE_URL = 'https://fhrichslhlrvcbwjihgr.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_OO8FqAAK-CEMDXuZKsWWkQ_7KcxVNOi';
+
+const sb = {
+  async query(table, opts = {}) {
+    let url = `${SUPABASE_URL}/rest/v1/${table}`;
+    const params = [`select=${encodeURIComponent(opts.select || '*')}`];
+    if (opts.order) params.push(`order=${encodeURIComponent(opts.order)}`);
+    url += '?' + params.join('&');
+    const res = await fetch(url, { headers: sb._h(), cache: 'no-store' });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+  },
+  async insert(table, data) {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
+      method: 'POST',
+      headers: { ...sb._h(), 'Prefer': 'return=representation' },
+      body: JSON.stringify(data)
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+  },
+  async update(table, id, data) {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      headers: { ...sb._h(), 'Prefer': 'return=representation' },
+      body: JSON.stringify({ ...data, updated_at: new Date().toISOString() })
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+  },
+  _h() {
+    return {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json'
+    };
+  }
+};
+
+// ── State ──
+let allItems = [];
+let visibleItems = [];
+let selectedItem = null;
+let hiIdx = -1;
+let sessionLogs = [];
+let panelOpen = false;
+
+// ── Init ──
+window.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('qc-date').value = new Date().toISOString().slice(0, 10);
+  const saved = localStorage.getItem('opsdesk_logged_by');
+  if (saved) document.getElementById('qc-logged-by').value = saved;
+
+  // Close panel when clicking outside
+  document.addEventListener('click', e => {
+    if (!document.getElementById('sel-wrap').contains(e.target)) closePanel();
+  });
+
+  loadItems();
+});
+
+async function loadItems() {
+  setStatus('loading', '⏳', 'Connecting…');
+  try {
+    allItems = await sb.query('items', { order: 'name.asc' });
+    setStatus('connected', '🟢', `Connected · ${allItems.length} items loaded`);
+    renderOptions('');
+  } catch (e) {
+    setStatus('error', '🔴', 'Connection failed');
+    toast('❌ ' + e.message);
+    document.getElementById('sel-list').innerHTML = '<div class="sel-empty">⚠️ Could not load items. Check connection.</div>';
+  }
+}
+
+// ── Searchable Select logic ──
+function togglePanel() {
+  panelOpen ? closePanel() : openPanel();
+}
+
+function openPanel() {
+  panelOpen = true;
+  document.getElementById('sel-panel').classList.add('open');
+  document.getElementById('sel-trigger').classList.add('open');
+  document.getElementById('sel-chevron').classList.add('open');
+  const search = document.getElementById('sel-search');
+  search.value = '';
+  renderOptions('');
+  setTimeout(() => search.focus(), 60);
+}
+
+function closePanel() {
+  panelOpen = false;
+  document.getElementById('sel-panel').classList.remove('open');
+  document.getElementById('sel-trigger').classList.remove('open');
+  document.getElementById('sel-chevron').classList.remove('open');
+  hiIdx = -1;
+}
+
+function filterOptions(val) {
+  hiIdx = -1;
+  renderOptions(val);
+}
+
+function renderOptions(query) {
+  const q = (query || '').trim().toLowerCase();
+  visibleItems = q
+    ? allItems.filter(it =>
+        it.name.toLowerCase().includes(q) ||
+        (it.category || '').toLowerCase().includes(q) ||
+        (it.unit || '').toLowerCase().includes(q)
+      )
+    : [...allItems];
+
+  const list = document.getElementById('sel-list');
+  if (!visibleItems.length) {
+    list.innerHTML = `<div class="sel-empty">No items match "${query}"</div>`;
+    return;
+  }
+
+  list.innerHTML = visibleItems.map((it, i) => {
+    const days = it.daily_use > 0 ? (it.stock / it.daily_use) : null;
+    const daysStr = days !== null ? days.toFixed(1) + 'd left' : null;
+    const bc = !daysStr ? '' : parseFloat(daysStr) <= 3 ? 'badge-red' : parseFloat(daysStr) <= 5 ? 'badge-amber' : 'badge-green';
+    const chosenCls = selectedItem && selectedItem.id === it.id ? ' chosen' : '';
+    return `<div class="sel-option${chosenCls}" id="so-${i}" onclick="selectItem(${i})" onmouseover="hoverItem(${i})">
+      <div class="sel-opt-name">${highlight(it.name, query)}</div>
+      <div class="sel-opt-meta">
+        <span>${it.category || ''}</span>
+        <span>Stock: <strong>${it.stock} ${it.unit}</strong></span>
+        ${daysStr ? `<span class="badge ${bc}">${daysStr}</span>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function highlight(text, query) {
+  if (!query || !query.trim()) return text;
+  const re = new RegExp(`(${query.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+  return text.replace(re, '<mark style="background:#fde8da;border-radius:2px;padding:0 1px">$1</mark>');
+}
+
+function hoverItem(i) {
+  hiIdx = i;
+  document.querySelectorAll('.sel-option').forEach((el, j) =>
+    el.classList.toggle('hi', j === i)
+  );
+}
+
+function handleKey(e) {
+  if (e.key === 'ArrowDown') { hiIdx = Math.min(hiIdx + 1, visibleItems.length - 1); hoverItem(hiIdx); scrollToHi(); e.preventDefault(); }
+  else if (e.key === 'ArrowUp') { hiIdx = Math.max(hiIdx - 1, 0); hoverItem(hiIdx); scrollToHi(); e.preventDefault(); }
+  else if (e.key === 'Enter' && hiIdx >= 0) { selectItem(hiIdx); e.preventDefault(); }
+  else if (e.key === 'Escape') { closePanel(); }
+}
+
+function scrollToHi() {
+  const el = document.getElementById('so-' + hiIdx);
+  if (el) el.scrollIntoView({ block: 'nearest' });
+}
+
+function selectItem(i) {
+  const it = visibleItems[i];
+  if (!it) return;
+  selectedItem = it;
+  document.getElementById('qc-item-id').value = it.id;
+
+  // Update trigger label
+  const label = document.getElementById('sel-label');
+  label.textContent = it.name;
+  label.classList.remove('ph');
+
+  // Unit on qty field
+  document.getElementById('qty-unit-label').textContent = it.unit;
+
+  // Info box
+  const days = it.daily_use > 0 ? (it.stock / it.daily_use).toFixed(1) : null;
+  const bc = !days ? 'badge-green' : parseFloat(days) <= 3 ? 'badge-red' : parseFloat(days) <= 5 ? 'badge-amber' : 'badge-green';
+  const infoBox = document.getElementById('item-info');
+  infoBox.style.display = '';
+  infoBox.innerHTML = `
+    <strong>${it.name}</strong> &nbsp;·&nbsp; ${it.category || '—'}<br>
+    Current stock: <strong>${it.stock} ${it.unit}</strong>
+    ${it.daily_use ? ` &nbsp;·&nbsp; Daily avg: <strong>${it.daily_use} ${it.unit}/day</strong>` : ''}
+    ${days ? ` &nbsp;·&nbsp; <span class="badge ${bc}">${days} days left</span>` : ''}
+    ${it.supplier ? `<br>Supplier: ${it.supplier}` : ''}
+  `;
+
+  closePanel();
+  document.getElementById('qc-qty').focus();
+
+  // re-validate qty if already entered
+  validateQty();
+}
+
+// ── Validation ──
+function validateQty() {
+  if (!selectedItem) return;
+  const val = parseFloat(document.getElementById('qc-qty').value) || 0;
+  const errEl = document.getElementById('qty-err');
+  if (val > selectedItem.stock) {
+    errEl.textContent = `⚠️ Exceeds current stock (${selectedItem.stock} ${selectedItem.unit})`;
+    errEl.style.display = 'block';
+  } else if (val <= 0 && document.getElementById('qc-qty').value !== '') {
+    errEl.textContent = '⚠️ Quantity must be greater than 0';
+    errEl.style.display = 'block';
+  } else {
+    errEl.style.display = 'none';
+  }
+}
+
+// ── Submit ──
+async function submitConsumption() {
+  if (!selectedItem) { toast('⚠️ Please select an item first'); return; }
+  const qty = parseFloat(document.getElementById('qc-qty').value);
+  if (!qty || qty <= 0) { toast('⚠️ Enter a valid quantity'); document.getElementById('qc-qty').focus(); return; }
+  if (qty > selectedItem.stock) { toast('⚠️ Quantity exceeds current stock'); return; }
+  const date = document.getElementById('qc-date').value;
+  if (!date) { toast('⚠️ Select a date'); return; }
+
+  const loggedBy = document.getElementById('qc-logged-by').value.trim();
+  const note = document.getElementById('qc-note').value.trim();
+  const fullNote = [loggedBy ? `By: ${loggedBy}` : '', note].filter(Boolean).join(' · ');
+  if (loggedBy) localStorage.setItem('opsdesk_logged_by', loggedBy);
+
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true; btn.textContent = '⏳ Submitting…';
+
+  try {
+    await sb.insert('consumption_logs', {
+      item_id: selectedItem.id, qty, note: fullNote || null, logged_at: date
+    });
+    await sb.update('items', selectedItem.id, { stock: Math.max(0, selectedItem.stock - qty) });
+
+    toast(`✅ Logged ${qty} ${selectedItem.unit} for "${selectedItem.name}"`);
+
+    sessionLogs.unshift({ item: selectedItem.name, qty, unit: selectedItem.unit,
+      time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
+      by: loggedBy || null });
+    renderSessionLog();
+
+    // Refresh item list
+    allItems = await sb.query('items', { order: 'name.asc' });
+    setStatus('connected', '🟢', `Connected · ${allItems.length} items loaded`);
+
+    resetForm();
+  } catch (e) {
+    toast('❌ Error: ' + e.message);
+  } finally {
+    btn.disabled = false; btn.textContent = '✅ Log Usage';
+  }
+}
+
+function resetForm() {
+  selectedItem = null;
+  const label = document.getElementById('sel-label');
+  label.textContent = 'Select an item…';
+  label.classList.add('ph');
+  document.getElementById('qc-item-id').value = '';
+  document.getElementById('qc-qty').value = '';
+  document.getElementById('qc-note').value = '';
+  document.getElementById('qc-date').value = new Date().toISOString().slice(0, 10);
+  document.getElementById('item-info').style.display = 'none';
+  document.getElementById('qty-unit-label').textContent = '';
+  document.getElementById('qty-err').style.display = 'none';
+  closePanel();
+}
+
+// ── Session log ──
+function renderSessionLog() {
+  const section = document.getElementById('recent-section');
+  const list = document.getElementById('recent-log-list');
+  if (!sessionLogs.length) { section.style.display = 'none'; return; }
+  section.style.display = 'block';
+  list.innerHTML = sessionLogs.slice(0, 10).map(l =>
+    `<div class="log-entry">
+      <span class="log-item">${l.item}</span>
+      <span class="log-qty">−${l.qty} ${l.unit}</span>
+      <span class="log-time">${l.time}${l.by ? ' · ' + l.by : ''}</span>
+    </div>`
+  ).join('');
+}
+
+// ── Status bar ──
+function setStatus(type, icon, text) {
+  const el = document.getElementById('db-status');
+  el.className = 'status-bar ' + type;
+  document.getElementById('status-icon').textContent = icon;
+  document.getElementById('status-text').textContent = text;
+}
+
+// ── Toast ──
+let toastTimer;
+function toast(msg, dur = 3000) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), dur);
+}
+</script>
+</body>
+</html>
